@@ -15,14 +15,17 @@ def writeline(open_file, s):
 def speed(p1, p2):
     c = 0.028206675277192242  # extrusion speed: E'distance*c' (number from slicer for hips) TODO: filament specific?
 
-    x1, x2 = p1[0], p2[0]
-    y1, y2 = p1[1], p2[1]
-    return round(sqrt((x1-x2)**2+(y1-y2)**2)*c, 3)
+    return round(sqrt((p1.x-p2.x)**2+(p1.y-p2.y)**2)*c, 3)
 
 
 def start(gcode_output_file, settings):
+    """
+    Initial commands, not sure what they all do ...
+    :param gcode_output_file:
+    :param settings: general print settings dict
+    :return: None
+    """
     header_file = open(mask_dir / 'header', 'r')
-
     for line in header_file.readlines():
         line = line.replace('ExtT', str(settings['extruder_temp']))
         line = line.replace('BedT', str(settings['bed_temp']))
@@ -31,7 +34,31 @@ def start(gcode_output_file, settings):
         gcode_output_file.write(line)
 
 
+def move(gcode_output_file, p, cur_layer_height):
+    """
+    Retracts filament -> move up above print (0.6mm above) -> move to p -> put filament at E0 again
+    :param gcode_output_file: some time make it into class maybe : )
+    :param p: target point (x, y)
+    :param cur_layer_height: height to set nozzle after move
+    :return: None
+    """
+    move_file = open(mask_dir / 'move', 'r')
+    for line in move_file.readlines():
+        line = line.replace('target', f'X{p.x} Y{p.y}')
+        line = line.replace('z', str(cur_layer_height))
+        line = line.replace('above', str(cur_layer_height+0.6))
+
+        gcode_output_file.write(line)
+
 def layer_transition(open_file, z, cur_pos, start_pos):
+    """
+    TODO same as move ??
+    :param open_file:
+    :param z:
+    :param cur_pos:
+    :param start_pos:
+    :return:
+    """
     layer_transition = open('layer_transition', 'r')
     z, h = str(z), str(round(z+0.800, 3))
     for line in layer_transition:
