@@ -1,14 +1,7 @@
 import numpy as np
 from numpy import sqrt, round
-from functions import speed, writeline, layer_transition, end, sign, start, move
+from functions import speed, writeline, layer_transition, end, sign, start, move, Point, make_frame
 
-class Point:
-    def __init__(self, x, y):
-        self.x, self.y = x, y
-
-    def __add__(self, other):
-        x, y = round(self.x + other.x, 3), round(self.y + other.y, 3)
-        return Point(x, y)
 
 """
 1. do initial stuff
@@ -24,6 +17,7 @@ settings = {
     'extruder_temp': 220,
     'bed_temp': 100,
     'nozzle_Ø': 0.4,
+    'frame_dimensions': (100, 100),
 }
 
 material = settings['material']
@@ -31,12 +25,13 @@ thickness = settings['thickness']
 
 filename = 'test' #f'{thickness}mm_{material}_plate'
 
+frame_width_x, frame_width_y = 100, 100
+
+dx0 = settings['nozzle_Ø'] * 0.943 # need a bit of overlap.
+dy0 = 48.459  # dy = 48.609
 dz0 = settings['layer_height']
 
-layer_cnt = int(thickness / dz0)
-
-dy0 = 48.459  # dy = 48.609
-dx0 = settings['nozzle_Ø'] * 0.943 # need a bit of overlap.
+dV0 = (dx0, dy0, dz0)
 
 # origin, upper left of frame
 p0 = Point(175, 175)
@@ -46,11 +41,25 @@ with open(filename + '.gcode', 'a+', newline='') as gcode_output_file:
     start(gcode_output_file, settings)
     move(gcode_output_file, p0, cur_layer_height=dz0)
 
+    layer_cnt = int(thickness / dz0)
     # make frame -> add bars -> restart
     for layer_idx in range(layer_cnt+1):
         prev_pos = p0
         cur_layer_height = round(dz0 + layer_idx * dz0, 3)
 
+        dp = prev_pos + Point(0, -100)
+        writeline(gcode_output_file, f'G1 X{dp.x} Y{dp.y} E{speed(prev_pos, dp)}')
+
+        dp += Point(100, 0)
+        writeline(gcode_output_file, f'G1 X{dp.x} Y{dp.y} E{speed(prev_pos, dp)}')
+
+        dp += Point(0, 100)
+        writeline(gcode_output_file, f'G1 X{dp.x} Y{dp.y} E{speed(prev_pos, dp)}')
+
+        dp += Point(-100, 0)
+        writeline(gcode_output_file, f'G1 X{dp.x} Y{dp.y} E{speed(prev_pos, dp)}')
+
+        make_frame(dV0, settings)
         dx, dy = 0, 100
         dp = prev_pos + Point(dx, dy)
         writeline(gcode_output_file, f'G1 X{dp.x} Y{dp.y} E{speed(prev_pos, dp)}')

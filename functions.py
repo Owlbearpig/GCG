@@ -1,6 +1,22 @@
 from numpy import sqrt
 from consts import mask_dir
 
+
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+
+    def __add__(self, other):
+        x, y = round(self.x + other.x, 3), round(self.y + other.y, 3)
+        return Point(x, y)
+
+
+def speed(p1, p2):
+    c = 0.028206675277192242  # extrusion speed: E'distance*c' (number from slicer for hips) TODO: filament specific?
+
+    return round(sqrt((p1.x-p2.x)**2+(p1.y-p2.y)**2)*c, 3)
+
+
 def sign(i):
     if i % 4 == 0:
         return -1
@@ -8,14 +24,15 @@ def sign(i):
         return 1
     return 0
 
+
+def make_frame(step_widths, settings):
+    dx, dy = step_widths[0], step_widths[1]
+    width_x, width_y = settings['frame_dimensions']
+
+
+
 def writeline(open_file, s):
     open_file.write('\n'+s)
-
-
-def speed(p1, p2):
-    c = 0.028206675277192242  # extrusion speed: E'distance*c' (number from slicer for hips) TODO: filament specific?
-
-    return round(sqrt((p1.x-p2.x)**2+(p1.y-p2.y)**2)*c, 3)
 
 
 def start(gcode_output_file, settings):
@@ -49,6 +66,7 @@ def move(gcode_output_file, p, cur_layer_height):
         line = line.replace('above', str(cur_layer_height+0.6))
 
         gcode_output_file.write(line)
+
 
 def layer_transition(open_file, z, cur_pos, start_pos):
     """
